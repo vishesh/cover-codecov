@@ -22,10 +22,9 @@
 ;; Submit cover information to Codecov
 (define (generate-codecov-coverage coverage files [_dir "coverage"])
   (define json (codecov-json coverage files))
-  (define-values (status resp port) (send-codecov! json))
-  (displayln status)
-  (displayln resp)
-  (displayln "Coverage information sent to Codecov."))
+   (call-with-output-file "coverage.json"
+     (λ (out) (write-json json out))
+    #:exists 'replace))
 
 (define (codecov-json coverage files)
   (hasheq 'messages (hasheq)
@@ -82,7 +81,7 @@
                               p
                               x))
               [l (in-list x)])
-    
+
     (match l
       [(list name loc pred unit@)
        (define ?
@@ -96,7 +95,7 @@
                    'cover/codecov
                    p))
        (values ? @)]
-       
+
       [e
        (error 'cover-codecov
               "Error loading cover services from ~a, expected four element list, got ~a"
@@ -113,7 +112,7 @@
           (define raw-params (filter cdr (query)))
           (define params (alist->form-urlencoded raw-params))
           (http-sendrecv CODECOV_HOST
-                         (string-append "/upload/v1?" params)
+                         (string-append "/upload/v2?" params)
                          #:method "POST"
                          #:ssl? #t
                          #:data (jsexpr->bytes json)
